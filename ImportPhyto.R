@@ -10,58 +10,18 @@
 
 # COMMENT OUT BELOW WHEN RUNNING FUNCTION IN SHINY
 
-# # Load libraries needed
-  library(tidyverse)
-  library(stringr)
-  library(odbc)
-  library(RODBC)
-  library(DBI)
-  library(lubridate)
-  library(readxl)
-  library(magrittr)
-  library(DescTools)
+### Load libraries needed ####
+  # library(tidyverse)
+  # library(stringr)
+  # library(odbc)
+  # library(RODBC)
+  # library(DBI)
+  # library(lubridate)
+  # library(readxl)
+  # library(magrittr)
+  # library(DescTools)
 
 # COMMENT OUT ABOVE CODE WHEN RUNNING IN SHINY!
-scriptname <- "ImportPhyto.R"
-config <- read.csv("//env.govt.state.ma.us/enterprise/DCR-WestBoylston-WKGRP/WatershedJAH/EQStaff/WQDatabase/R-Shared/WAVE-WIT/Configs/WAVE_WIT_Config.csv", header = TRUE)
-config <- as.character(config$CONFIG_VALUE)
-
-dataset <-  read_excel(config[9], sheet = 1, col_names = T, trim_ws = T) %>%
-  filter(ImportMethod == "Importer-R" & ScriptProcessImport == scriptname)
-# Choose the dataset from options (Trib Selected):
-dataset <- slice(dataset,1)
-rawdatafolder <- paste0(dataset[10])
-processedfolder <- paste0(dataset[11])
-filename.db <- "W:/EQINSPEC/WQDatabase/databases/TestingDB_be.mdb"
-#!# Outside troubleshooting, replace filepath with: paste0(dataset[6])
-
-ImportTable <- paste0(dataset[7])
-ImportFlagTable <- NULL # This data has no related flag table
-
-# ### Find the file to Import -  if this will always be a csv then your regex need not include "xlsx" both here and in your datasets excel file
-files <- grep(
-  x = list.files(rawdatafolder, ignore.case = T, include.dirs = F),
-  pattern = "^(?=.*\\b(xlsx|csv)\\b)(?!.*\\$\\b)", # regex to show xlsx files, but filter out lockfiles string = "$"
-  value = T,
-  perl =T
-)
-
-#  List the files:
-files
-# # Select the file to import manually
-file <- files[3]
-
-############################################################################################
-#DC Testing Code (these lines not needed in final script - delete down to line 58
-
-#!# filename.db <-  "//env.govt.state.ma.us/enterprise/DCR-WestBoylston-WKGRP/WatershedJAH/EQStaff/WQDatabase/DB_Testing/TESTING_WQDB_be.mdb"
-#!# rawdatafolder <- "P:/DOCUMENTS/R/QUABBIN"
-#!# ImportTable <- "tbl_PhytoQ"
-#!# file <- "2018-04-09_Quabbin_206.xlsx"
-
-######################################################################################################################
-######################################################################################################################
-######################################################################################################################
 
 PROCESS_DATA <- function(file, rawdatafolder, filename.db, probe = NULL, ImportTable, ImportFlagTable = NULL){ # Start the function - takes 1 input (File)
 
@@ -110,21 +70,29 @@ removeNA <- complete.cases(df.wq)
 df.wq <- df.wq[removeNA,]
 
 #!# Remove values where Density = 0
-removeZeros <- apply(df.wq, 1, function(row) all(row !=0 ))
-df.wq <- df.wq[removeZeros,]
+# removeZeros <- apply(df.wq, 1, function(row) all(row !=0 ))
+df.wq <- df.wq[df.wq$Density > 0,]
 
 # modify column names and add missing columns
-df.wq["SampleDate"]<-dataDate
-df.wq["Station"]<-dataLoc
-df.wq["Analyst"]<-analyst
-df.wq["ImportDate"]<-today()
-df.wq["DataSource"]<-file
+# df.wq["SampleDate"] <- dataDate
+# df.wq["Station"] <- dataLoc
+# df.wq["Analyst"] <- analyst
+# df.wq["ImportDate"] <- today()
+# df.wq["DataSource"] <- file
+
+df.wq <- df.wq %>% 
+  mutate(SampleDate = dataDate, 
+         Station = dataLoc, 
+         Analyst = analyst, 
+         ImportDate = today(), 
+         DataSource = file) 
+
 
 # Fix data types and digits
 df.wq$Density <- round(as.numeric(df.wq$Density))
 df.wq$Depth_m <- as.numeric(df.wq$Depth_m)
-
 # Connect to db 
+
 con <- dbConnect(odbc::odbc(),
                  .connection_string = paste("driver={Microsoft Access Driver (*.mdb, *.accdb)}",
                                             paste0("DBQ=", filename.db), "Uid=Admin;Pwd=;", sep = ";"),
@@ -210,12 +178,12 @@ return(dfs)
 #### COMMENT OUT SECTION BELOW WHEN RUNNING SHINY
 ########################################################################################################
 # #RUN THE FUNCTION TO PROCESS THE DATA AND RETURN 2 DATAFRAMES and path AS LIST:
-dfs <- PROCESS_DATA(file, rawdatafolder, filename.db, ImportTable = ImportTable, ImportFlagTable = NULL )
-# #
-# # # Extract each element needed
-df.wq     <- dfs[[1]]
-path      <- dfs[[2]]
-df.flags  <- dfs[[3]]
+# dfs <- PROCESS_DATA(file, rawdatafolder, filename.db, ImportTable = ImportTable, ImportFlagTable = NULL )
+# # #
+# # # # Extract each element needed
+# df.wq     <- dfs[[1]]
+# path      <- dfs[[2]]
+# df.flags  <- dfs[[3]]
 
 ########################################################################################################
 
