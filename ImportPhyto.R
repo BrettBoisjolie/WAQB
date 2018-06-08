@@ -1,9 +1,11 @@
 ##############################################################################################################################
 #     Title: ImportPhyto.R
-#     Description: This script will Format/Process MWRA data to DCR
-#     Written by: Dan Crocker, Max Nyquist
-#     Last Update: April 2018
-#    This script will process and import Wachusett Phytoplankton data into the AB Database
+#     Description: This script will take processed files from aquatic biologist survey 
+#        and transfer records into the database
+#     Written by: Dan Crocker, Max Nyquist, Brett Boisjolie
+#     Last Update: June 2018
+#    This script is based on work by Dan Crocker, modified for Quabbin by Brett Boisjolie.
+#       Specific notes from Brett denoted with #!#
 ##############################################################################################################################
 
 # COMMENT OUT BELOW WHEN RUNNING FUNCTION IN SHINY
